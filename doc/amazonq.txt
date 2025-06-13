@@ -1,0 +1,407 @@
+*amazonq.txt*    Amazon Q for Nvim
+
+                                   AMAZON Q
+
+==============================================================================
+OVERVIEW                                                  *amazonq* *amazon-q*
+
+Amazon Q
+
+                                      Type |gO| to see the table of contents.
+
+==============================================================================
+USAGE                                                         *amazonq-usage*
+
+By default, Amazon Q provides its full functionality with one global mapping
+`zq` and one command `:AmazonQ`. The following examples show what you can do.
+See |amazonq-commands| and |amazonq-mappings| for details.
+
+EXAMPLES
+
+- Select text in a buffer, then type `zq`. The selected text is appended to
+  the current Chat context.
+  - Equivalent to: Select text, type `:AmazonQ`, then run the command.
+- Type `zq` or run `:AmazonQ` to focus the Chat window, then...
+  - type `cC` to edit the global context (which is automatically inserted
+    before every prompt). |amazonq-context|
+  - type `cc` to edit the current context (which is inserted when you send the
+    prompt). |amazonq-prompt|
+- Select some text, type `:AmazonQ refactor`, then run the command.
+- Run `:.AmazonQ fix` to fix only the current line (the standard "." range
+  means "current line").
+- Run `:%AmazonQ optimize` to optimize the entire contents of the current
+  file.
+- Run `:AmazonQ explain` to explain the current file.
+
+------------------------------------------------------------------------------
+MAPPINGS                                                    *amazonq-mappings*
+
+                                                                  *amazonq_zq*
+`zq` is mapped to |:AmazonQ| in normal-mode and visual-mode.
+
+Use |ZZ| to save and hide any window, or |ZQ| to hide a window without saving
+changes. (These are standard Nvim commands.)
+
+EXAMPLES
+
+- Select some text, then type "zq".
+- Hit "zq" from anywhere to focus the current |amazonq-chat| window.
+
+------------------------------------------------------------------------------
+COMMANDS                                                    *amazonq-commands*
+
+:AmazonQ                                                            *:AmazonQ*
+    Focuses the |amazonq-chat| window. Attempts to connect if necessary. When
+    a prompt is entered in the Chat window, the file from the previous window
+    is included as chat context, plus any context provided in the global
+    |amazonq-context| file and the |amazonq-prompt|.
+
+:[range]AmazonQ
+    Appends the text in [range] to the current |amazonq-prompt|, without
+    sending the prompt. Hit <Enter> in the Chat window to send the prompt.
+                                                               *amazonq-range*
+    - [range] is a standard Vim range. When you select text in a buffer,
+      typing ":AmazonQ" pre-fills "'<,'>" in the |cmdline| prompt, which tells
+      Nvim to send the visual selection to the :AmazonQ command: >
+        :'<,'>AmazonQ
+<      then hit <Enter>.
+    - `:%AmazonQ` ([range] of "%") sends the entire buffer contents. Compare
+      this to `:AmazonQ` (no [range]), which tracks the file and future
+      changes to it (currently limited to one file).
+    - `:0AmazonQ` ([range] of "0") only focuses the Chat window, without
+      updating the context.
+
+:AmazonQ toggle                                              *:AmazonQ_toggle*
+    Shows or hides the |amazonq-chat| window.
+
+:AmazonQ clear                                                *:AmazonQ_clear*
+    Clears the |amazonq-chat| session.
+
+:AmazonQ help                                                  *:AmazonQ_help*
+    Shows the |amazonq-chat| help message.
+
+:AmazonQ login                                                *:AmazonQ_login*
+    Initiates SSO authentication, or tries to refresh the token cached on the
+    filesystem. When a new flow is initiated, it will display device
+    authentication notification with device authorisation code.
+
+:AmazonQ logout                                              *:AmazonQ_logout*
+    Deletes the auth token.
+
+:[range]AmazonQ explain                                     *:AmazonQ_explain*
+    "Explain" the code block selected by [range]. Supports visual selection or
+    any [range] passed to the command. Defaults to whole buffer if [range] is
+    not given.
+
+:[range]AmazonQ fix                                             *:AmazonQ_fix*
+    "Fix" the selected code block. Selection and [range] works the same as for
+    |:AmazonQ-explain|.
+
+:[range]AmazonQ optimize                                   *:AmazonQ_optimize*
+    "Optimize" the selected code block. Selection and [range] works the same
+    as for |:AmazonQ-explain|.
+
+:[range]AmazonQ refactor                                   *:AmazonQ_refactor*
+    "Refactor" the selected code block. Selection and [range] works the same
+    as for |:AmazonQ-explain|.
+
+==============================================================================
+CHAT                                                            *amazonq-chat*
+
+Besides code completions, the primary interface to Amazon Q is the Chat
+window.
+
+HOW IT WORKS
+
+- Add as much content (up to the service limit) from any number of files by
+  using `zq` |amazonq_zq| or `:AmazonQ`, or editing the prompt file directly
+  (see |amazonq-prompt|).
+- The buffer in the next (non-Chat) window is also automatically included as
+  context for the prompt.
+- Multiline input is supported by editing the current |amazonq-prompt| file or
+  global |amazonq-context|, which happens automatically when you use `zq` or
+  `:AmazonQ`.
+  - Technical note: Multiline input can't be directly inserted into the prompt
+    (because <Enter> invokes the prompt). This is a Nvim limitation which may
+    change in the future. Instead use `zq` or `:AmazonQ` (from anywhere), or
+    `cc` (from the Chat window).
+- You can enter prompts directly in the Chat buffer from insert-mode, as long
+  as the input does not have newlines (see "MULTILINE PROMPTS" below).
+- To confirm (send) the prompt, hit <Enter> from the Chat window.
+
+CHAT MAPPINGS
+
+The following mappings are defined in the Amazon Q Chat window:
+
+                                                *amazonq_<Enter>*
+<Enter>   Sends the prompt (in both normal-mode and insert-mode).
+
+CTRL-C    Cancels the current request (if any).
+
+                                                *amazonq-context* *amazonq_cC*
+cC        Edit the global "sticky" context. The contents of this file will be
+          inserted before every prompt. The file is NOT cleared after sending
+          a prompt.
+
+                                                *amazonq-prompt* *amazonq_cc*
+cc        Edit the context file for the current prompt. The contents of this
+          file will be inserted when the prompt is sent (<Enter> from the Chat
+          window). File is cleared after a successful response.
+
+          If the file has unsaved changes, |:AmazonQ| may show the |W12| dialog.
+
+          To compose a long-lived ("sticky") prompt which is NOT cleared after
+          sending a prompt, use |amazonq_cC|.
+
+Summary:
+- Use `cc` to edit multiline context for the CURRENT prompt.
+- Use `cC` to edit the global context inserted before EVERY prompt.
+
+MULTILINE PROMPTS
+
+Multiline content cannot be typed directly into the Chat prompt, but there are
+several ways to enter multiline input:
+
+- Use the `cp` buffer-local mapping to edit the current context. When you save
+  the context (using standard |:write| command, |ZZ|, etc.), the Amazon
+  Q context is updated and your prompt will include that context.
+- Paste or put (|p|) multiline text into the Chat prompt.
+  - if the pasted text does not have multiple lines, it is pasted as normal
+    into the prompt.
+  - if the pasted text has multiple lines, it is added to the pending prompt
+    file. |amazonq_cp|
+
+==============================================================================
+CODE COMPLETIONS (INLINE SUGGESTIONS)                     *amazonq-completion*
+
+Inline suggestions (completions) are provided by the standard LSP
+"textDocument/completion" method. Any completion plugin (nvim-cmp, blink,
+mini.completion, etc.) that gathers LSP completions should work without any
+configuration. See |amazonq-config-completion| for details specific to various
+(third-party) completion plugins.
+
+After authenticating with `:AmazonQ login`, code completions can be invoked from
+any configured `filetypes`. The keybinding to invoke completion depends on your
+completion plugin, but typically it is (in insert-mode) one of: `CTRL-space`,
+`ALT-space`, `CTRL-x CTRL-o`, `CTRL-x CTRL-u`.
+
+Inline suggestions are enabled by default. To disable them pass
+`inline_suggest=false` to `require('amazonq').setup()`. >lua
+
+  require('amazonq').setup({
+    ...,
+    inline_suggest = true,
+  })
+
+==============================================================================
+CONFIGURATION                                                 *amazonq-config*
+
+GLOBAL CONFIGURATION
+
+Configuration settings with their defaults are listed below (only `ssoStartUrl`
+is required, all other settings are optional): >lua
+
+  require('amazonq').setup({
+    -- Command passed to `vim.lsp` to start Q LSP. Amazon -- Q LSP is
+    -- a NodeJS program, which must be started with `--stdio` flag.
+    cmd = { 'node', 'path/to/aws-lsp-codewhisperer-token-binary.js', '--stdio' },
+    -- REQUIRED: SSO portal URL for authentication
+    ssoStartUrl = 'https://view.awsapps.com/start', -- Authenticate with Amazon Q Free Tier
+    -- OR
+    -- ssoStartUrl = 'your-organization-sso-url', -- For Pro subscription
+    -- List of filetypes where the Q will be activated. Default:
+    filetypes = {
+        'amazonq', 'java', 'python', 'typescript', 'javascript',
+        'csharp', 'ruby', 'kotlin', 'shell', 'sql', 'c', 'cpp', 'go', 'rust', 'lua',
+    },
+    -- Enable inline code suggestions.
+    inline_suggest = true,
+    -- Customize how the chat window is set up.
+    on_chat_open = function()
+      vim.cmd[[
+        vertical topleft split
+        set wrap breakindent nonumber norelativenumber nolist
+      ]]
+    end,
+    -- Enable debug mode (for development).
+    debug = false,
+  })
+
+
+CHAT CONFIGURATION
+
+To change the chat window size, orientation, options, etc., pass
+`on_chat_open` to setup().
+
+Examples:
+
+To set the window width to 80 columns and place it leftmost: >lua
+  require('amazonq').setup({
+    ssoStartUrl = '…',
+    on_chat_open = function()
+      vim.cmd[[
+        vertical topleft split
+        vertical resize 80
+        " Window options:
+        set wrap breakindent nonumber norelativenumber nolist
+      ]]
+    end,
+  })
+
+To open chat in a horizontal window, call "split" instead of "vsplit": >lua
+  on_chat_open = function()
+    vim.cmd[[
+      split
+      " Window options:
+      set wrap breakindent nonumber norelativenumber nolist
+    ]]
+  end
+
+To open chat in the CURRENT window (no split), drop the "split": >lua
+  on_chat_open = function()
+    -- Do nothing...
+  end
+
+The Chat buffer sets a buffer-local variable `b:amazonq` (from Lua:
+`vim.b.amazonq`). You can configure the Chat buffer by handling the |FileType|
+event and checking for this variable: >lua
+
+  vim.api.nvim_create_autocmd('FileType', {
+    group = vim.api.nvim_create_augroup('my.amazonq', { clear = true }),
+    callback = function(ev)
+      if vim.b.amazonq then
+        vim.wo.wrap = false
+      end
+    end,
+  })
+
+------------------------------------------------------------------------------
+COMPLETION CONFIGURATION                           *amazonq-config-completion*
+
+Inline suggestions (completion) is provided by default through the LSP
+"textDocument/completion" method. This should automatically work with any
+autocompletion plugin that supports LSP sources. However, you may need to
+adjust some things depending on which plugin you use.
+
+Note:
+
+- Suggestions are provided via the "textDocument/completion" LSP method.
+- Completion items are returned as "Text" kind.
+- Completions may take time, so your completion plugin may exclude them.
+  - Try waiting a few seconds with the popup menu open, while the items arrive
+    asynchronously.
+
+BLINK CONFIG
+
+Suggested config for blink: >lua
+
+    opts.sources.providers.lsp = {
+      name = 'LSP',
+      module = 'blink.cmp.sources.lsp',
+      enabled = true,
+      async = true,
+      timeout_ms = 200, -- Allow Amazon Q suggestions more time to arrive.
+    }
+
+BLINK WITH LAZYVIM
+
+Here's a sample LazyVim + blink.cmp configuration that prioritizes Amazon
+Q completions over other results and optimizes responsiveness: >lua
+
+  return {
+    {
+      'saghen/blink.cmp',
+      ---@param _ any
+      ---@param opts blink.cmp.Config
+      opts = function(_, opts)
+        opts.completion = opts.completion or {}
+        opts.completion.ghost_text.enabled = true -- Whether to show ghost text or not
+        opts.sources.default = { 'lsp', 'path', 'snippets', 'buffer' }
+
+        -- Adapted from the default blink LSP configuration: https://github.com/Saghen/blink.cmp/blob/9f32ef5c3bb44f943238bbcde0c467936475f177/lua/blink/cmp/config/sources.lua#L63
+        opts.sources.providers.lsp = {
+          name = 'LSP',
+          module = 'blink.cmp.sources.lsp',
+          -- Filter out 'text' items from the LSP provider (use 'buffer' provider for that).
+          transform_items = function(_, items)
+            for _, item in ipairs(items) do
+              if item.labelDetails and item.labelDetails.description and item.labelDetails.description == 'Amazon Q' then
+                item.score_offset = 1000
+              end
+              if item.kind == require('blink.cmp.types').CompletionItemKind.Snippet then
+                item.score_offset = item.score_offset - 3
+              end
+            end
+            return vim.tbl_filter(function(item)
+              return item.kind ~= require("blink.cmp.types").CompletionItemKind.Text
+            end, items)
+          end,
+
+          async = true, -- Show partial results while waiting for all providers.
+          timeout_ms = 200, -- Maximum time to wait before showing partial results.
+          min_keyword_length = 0, -- Minimum characters that trigger the provider.
+        }
+      end,
+    },
+  }
+<
+
+==============================================================================
+FAQ                                                             *amazonq-faq*
+
+HOW DO I FORCE INSERT-MODE WHEN ENTERING THE CHAT BUFFER/WINDOW? ~
+
+Add this to your config: >lua
+
+  vim.api.nvim_create_autocmd({ 'BufEnter', 'FileType' }, {
+    group = vim.api.nvim_create_augroup('my.amazonq', { clear = true }),
+    callback = function(ev)
+      if vim.b.amazonq then
+        vim.cmd.startinsert()
+      end
+    end,
+  })
+<
+
+HOW TO GET AUTO-COMPLETION (INLINE SUGGESTIONS)? ~
+
+Inline suggestions (completions) are provided by the standard LSP
+"textDocument/completion" method. Any autocomplete plugin that supports LSP
+completions should include Amazon Q provided suggestions without any
+configuration.
+
+HOW TO MANUALLY INVOKE COMPLETION (INLINE SUGGESTIONS)? ~
+
+Here's a code snippet which adds a global mapping that manually triggers
+Amazon Q code completions. Add it to your config, then restart Nvim, then type
+CTRL-q in insert-mode: >lua
+
+  -- CTRL-q (insert-mode) manually triggers Amazon Q completion (inline suggestions).
+  vim.keymap.set('i', '<c-q>', function()
+    local client = vim.lsp.get_clients({ bufnr = 0, name = 'amazonq-completion' })[1]
+    if not client then
+      vim.notify('Amazon Q not enabled for this buffer')
+      return
+    end
+    vim.lsp.completion.enable(true, client.id, 0)
+    vim.notify('Amazon Q: working...')
+    vim.lsp.completion.get()
+    -- vim.cmd[[redraw | echo '']]
+  end)
+
+HOW TO SEE THE CURRENT SETTINGS? ~
+
+You can see the current settings by inspecting the `config` object: >vim
+
+  :lua =require('amazonq.lsp').config
+
+HOW DO I START THE CLIENT MANUALLY? ~
+
+You can force the client to start like this: >vim
+
+  :lua vim.lsp.start(require('amazonq.lsp').config)
+
+
+==============================================================================
+ vim:tw=78:ts=4:sw=2:et:ft=help:norl:
+
