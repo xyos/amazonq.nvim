@@ -273,9 +273,10 @@ Currently it's not automated, you must run it manually:
     - Vim has a [known limitation](https://github.com/neovim/neovim/issues/7769) where it replaces newlines `\n` in multiline completions with NUL bytes, which it renders as `^@`.
       amazonq.nvim works around this by replacing the NUL bytes in a `CompleteDone` event-handler. 
 
-## Experimental Status
+## Experimental Status and Contributions
 
-The Neovim plugin for Amazon Q Developer is in experimental state. We welcome feedback, feature requests, and bug reports.
+The Neovim plugin for Amazon Q Developer is in experimental state. 
+We welcome contributions and feedback! See [Contributing Guide](CONTRIBUTING.md) for details on contributing feedback, feature requests, and bug reports.
 
 ## Security
 
